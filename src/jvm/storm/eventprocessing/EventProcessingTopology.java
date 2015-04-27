@@ -12,9 +12,10 @@ import org.yaml.snakeyaml.Yaml;
 import org.yaml.snakeyaml.constructor.SafeConstructor;
 import storm.eventprocessing.filter.KafkaProducerFilter;
 import storm.eventprocessing.filter.PrintFilter;
-import storm.eventprocessing.filter.URLFilter;
+import storm.eventprocessing.filter.EventFilter;
 import storm.eventprocessing.function.GetAdFreeWebPage;
 import storm.eventprocessing.function.PrepareCrawledPageDocument;
+import storm.eventprocessing.function.SplitEventString;
 import org.elasticsearch.common.settings.ImmutableSettings;
 import org.elasticsearch.common.settings.Settings;
 import storm.eventprocessing.state.ESTridentTupleMapper;
@@ -63,14 +64,15 @@ public class EventProcessingTopology {
         //Topology
         topology.newStream("crawlKafkaSpout", spout).parallelismHint(5)
                 .each(new Fields("str"), new PrintFilter())
+                .each(new Fields("str"), new SplitEventString(), new Fields("event_type", "event_uri", "event_desc", "event_task", "event_depth"))
                 //Bloom Filter
-                .each(new Fields("str"), new URLFilter())
+                .each(new Fields("event_type", "event_uri", "event_desc", "event_task", "event_depth"), new EventFilter())
                 //Download and Parse Webpage
-                .each(new Fields("str"), new GetAdFreeWebPage(), new Fields("url", "content_html", "title", "href", "depth"))
+                .each(new Fields("event_type", "event_uri"), new GetAdFreeWebPage(), new Fields("web_content", "web_title", "web_href"))
                 //Kafka Send: Recursive Href
-                .each(new Fields("href", "depth"), new KafkaProducerFilter())
+                .each(new Fields("event_type", "web_href", "event_depth"), new KafkaProducerFilter())
                 //Insert to Elasticsearch
-                .each(new Fields("url", "content_html", "title", "href"), new PrepareCrawledPageDocument(), new Fields("index", "type", "id", "source"))
+                .each(new Fields("event_type", "event_uri", "event_desc", "event_task", "web_content", "web_title"), new PrepareCrawledPageDocument(), new Fields("index", "type", "id", "source"))
                 .partitionPersist(esStateFactory, new Fields("index", "type", "id", "source"), new ESIndexUpdater<String>(new ESTridentTupleMapper()), new Fields())
                 ;
 

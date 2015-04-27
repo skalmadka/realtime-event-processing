@@ -2,6 +2,7 @@ package storm.eventprocessing.function;
 
 
 import backtype.storm.tuple.Values;
+import storm.eventprocessing.EventProcessingConfig;
 import storm.eventprocessing.common.Readability;
 import storm.trident.operation.BaseFunction;
 import storm.trident.operation.TridentCollector;
@@ -16,19 +17,17 @@ import java.net.URL;
 public class GetAdFreeWebPage  extends BaseFunction {
     @Override
     public void execute(TridentTuple tridentTuple, TridentCollector tridentCollector) {
-        String str = tridentTuple.getString(0);
-        String[] strSplit = str.split(" ");
+        String eventType =  tridentTuple.getString(0);
+        String url = tridentTuple.getString(1);
 
-        String url = strSplit[0];
-        int depth = 0;
-        if(strSplit.length > 1)
-            depth = Integer.parseInt(strSplit[1]);
+        if(!EventProcessingConfig.EVENT_TYPE_URL.equals(eventType))
+            tridentCollector.emit(new Values("", "", ""));
 
         Readability readability = null;
         Integer timeoutMillis = 4000;
 
         try {
-            readability = new Readability(new URL(url), timeoutMillis);  // URL
+            readability = new Readability(new URL(url), timeoutMillis);
         } catch (IOException e) {
             e.printStackTrace();
             return;
@@ -40,6 +39,6 @@ public class GetAdFreeWebPage  extends BaseFunction {
         String hrefString = readability.hrefString.toString();
 
         System.out.println("GetAdFreeWebPage: hrefString: \""+ hrefString+"\"");
-        tridentCollector.emit(new Values(url, webPageString, webPageTitle, hrefString, Integer.toString(depth)));
+        tridentCollector.emit(new Values(webPageString, webPageTitle, hrefString));
     }
 }

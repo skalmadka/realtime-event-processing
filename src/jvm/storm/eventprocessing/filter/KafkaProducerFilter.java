@@ -1,6 +1,7 @@
 package storm.eventprocessing.filter;
 
 
+import backtype.storm.tuple.Values;
 import kafka.producer.KeyedMessage;
 import kafka.producer.ProducerConfig;
 import storm.eventprocessing.EventProcessingConfig;
@@ -29,8 +30,12 @@ public class KafkaProducerFilter   extends BaseFilter {
 
     @Override
     public boolean isKeep(TridentTuple tridentTuple) {
-        String hrefList = tridentTuple.getString(0);
-        Integer depth = Integer.parseInt(tridentTuple.getString(1));
+        String eventType =  tridentTuple.getString(0);
+        String hrefList = tridentTuple.getString(1);
+        Integer depth = Integer.parseInt(tridentTuple.getString(2));
+
+        if(!EventProcessingConfig.EVENT_TYPE_URL.equals(eventType))
+            return true;
 
         if(hrefList == null || hrefList.trim().length() == 0 || depth == 0)
             return true;//Always pass tuple downstream. However skip recursively adding this Href URL to kafka.

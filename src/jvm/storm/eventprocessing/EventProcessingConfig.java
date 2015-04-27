@@ -31,4 +31,9 @@ public final class EventProcessingConfig {
 
     public static final String BLOOM_FILTER_DESIRED_FALSE_POSITIVE = "bloomfilter.falsePositive";
 
+    public static final String EVENT_TYPE_FILE = "FILE";
+    public static final String EVENT_TYPE_URL = "URL";
+
+    public static final String ELASTICSEARCH_INDEX_NAME = "event_index"; //MUST be lowercase
+
 }
